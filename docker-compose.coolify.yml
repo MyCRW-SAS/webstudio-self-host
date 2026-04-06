@@ -35,7 +35,7 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
-      - APP_FQDN=builder.mycrw.com
+      - APP_FQDN=https://builder.mycrw.com
       - NODE_ENV=production
       - PORT=3000
       - 'POSTGREST_URL=http://postgrest:3000'
@@ -46,7 +46,7 @@ services:
       - 'GH_CLIENT_ID=${GH_CLIENT_ID}'
       - 'GH_CLIENT_SECRET=${GH_CLIENT_SECRET}'
       - 'PGRST_JWT_SECRET=${SERVICE_BASE64_64_PGRST}'
-      - PUBLISHER_HOST=wstd.mycrw.com
+      - PUBLISHER_HOST=https://wstd.mycrw.com
       - 'FEATURES=*'
       - USER_PLAN=pro
       - MAX_ASSETS_PER_PROJECT=50
@@ -85,7 +85,7 @@ services:
         condition: service_healthy
     environment:
       - 'TRPC_SERVER_API_TOKEN=${SERVICE_BASE64_64_TRPC}'
-      - PUBLISHER_HOST=wstd.mycrw.com
+      - PUBLISHER_HOST=https://wstd.mycrw.com
       - 'BUILDER_INTERNAL_URL=http://app:3000'
     volumes:
       - 'published-sites:/var/publish'
