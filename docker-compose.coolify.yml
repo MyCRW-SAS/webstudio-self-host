@@ -1,66 +1,62 @@
 services:
-  # ── PostgREST ───────────────────────────────────────────────────────────────
   postgrest:
-    image: postgrest/postgrest:v12.2.0
+    image: 'postgrest/postgrest:v12.2.0'
     restart: unless-stopped
     expose:
-      - "3000"
+      - '3000'
     depends_on:
       migrate:
         condition: service_completed_successfully
     environment:
-      - PGRST_DB_URI=${PGRST_DB_URI}
+      - 'PGRST_DB_URI=${PGRST_DB_URI}'
       - PGRST_DB_ANON_ROLE=anon
-      - PGRST_JWT_SECRET=${SERVICE_BASE64_64_PGRST}
+      - 'PGRST_JWT_SECRET=${SERVICE_BASE64_64_PGRST}'
       - PGRST_DB_SCHEMAS=public
 
-  # ── Schema migrations ───────────────────────────────────────────────────────
   migrate:
-    image: ${BUILDER_IMAGE:-ghcr.io/webstudio-community/builder:latest}
-    restart: "no"
-    depends_on: []
+    image: '${BUILDER_IMAGE:-ghcr.io/webstudio-community/builder:latest}'
+    restart: 'no'
+    depends_on: { }
     entrypoint:
       - /prisma/node_modules/.bin/prisma
       - migrate
       - deploy
-      - --schema=/app/prisma/schema.prisma
+      - '--schema=/app/prisma/schema.prisma'
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      DIRECT_URL: ${DIRECT_URL}
+      DATABASE_URL: '${DATABASE_URL}'
+      DIRECT_URL: '${DIRECT_URL}'
 
-  # ── Webstudio builder ───────────────────────────────────────────────────────
   app:
-    image: ${BUILDER_IMAGE:-ghcr.io/webstudio-community/builder:latest}
+    image: '${BUILDER_IMAGE:-ghcr.io/webstudio-community/builder:latest}'
     restart: unless-stopped
     expose:
-      - "3000"
+      - '3000'
     depends_on:
       migrate:
         condition: service_completed_successfully
     environment:
-      - SERVICE_FQDN_APP_3000
       - APP_FQDN=builder.mycrw.com
       - NODE_ENV=production
       - PORT=3000
-      - POSTGREST_URL=http://postgrest:3000
-      - DATABASE_URL=${DATABASE_URL}
-      - DIRECT_URL=${DIRECT_URL}
-      - AUTH_SECRET=${SERVICE_PASSWORD_AUTH}
+      - 'POSTGREST_URL=http://postgrest:3000'
+      - 'DATABASE_URL=${DATABASE_URL}'
+      - 'DIRECT_URL=${DIRECT_URL}'
+      - 'AUTH_SECRET=${SERVICE_PASSWORD_AUTH}'
       - DEV_LOGIN=true
-      - GH_CLIENT_ID=${GH_CLIENT_ID}
-      - GH_CLIENT_SECRET=${GH_CLIENT_SECRET}
-      - PGRST_JWT_SECRET=${SERVICE_BASE64_64_PGRST}
+      - 'GH_CLIENT_ID=${GH_CLIENT_ID}'
+      - 'GH_CLIENT_SECRET=${GH_CLIENT_SECRET}'
+      - 'PGRST_JWT_SECRET=${SERVICE_BASE64_64_PGRST}'
       - PUBLISHER_HOST=wstd.mycrw.com
-      - FEATURES=*
+      - 'FEATURES=*'
       - USER_PLAN=pro
       - MAX_ASSETS_PER_PROJECT=50
-      - S3_ENDPOINT=${S3_ENDPOINT}
-      - S3_REGION=${S3_REGION}
-      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
-      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
-      - S3_BUCKET=${S3_BUCKET}
-      - TRPC_SERVER_API_TOKEN=${SERVICE_BASE64_64_TRPC}
-      - SELF_HOSTED_PUBLISHER_URL=http://publisher:4000
+      - 'S3_ENDPOINT=${S3_ENDPOINT}'
+      - 'S3_REGION=${S3_REGION}'
+      - 'S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}'
+      - 'S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}'
+      - 'S3_BUCKET=${S3_BUCKET}'
+      - 'TRPC_SERVER_API_TOKEN=${SERVICE_BASE64_64_TRPC}'
+      - 'SELF_HOSTED_PUBLISHER_URL=http://publisher:4000'
       - NODE_TLS_REJECT_UNAUTHORIZED=0
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
@@ -68,48 +64,46 @@ services:
       timeout: 10s
       retries: 5
     volumes:
-      - uploads:/app/public/s/uploads
+      - 'uploads:/app/public/s/uploads'
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ws-canvas.rule=HostRegexp(`^.+[.]builder[.]mycrw[.]com`)"
-      - "traefik.http.routers.ws-canvas.entrypoints=https"
-      - "traefik.http.routers.ws-canvas.tls=true"
-      - "traefik.http.routers.ws-canvas.tls.certresolver=cloudflare"
-      - "traefik.http.routers.ws-canvas.tls.domains[0].main=*.builder.mycrw.com"
-      - "traefik.http.routers.ws-canvas.tls.domains[0].sans=builder.mycrw.com"
-      - "traefik.http.routers.ws-canvas.service=ws-canvas-svc"
-      - "traefik.http.routers.ws-canvas.middlewares=gzip"
-      - "traefik.http.services.ws-canvas-svc.loadbalancer.server.port=3000"
+      - traefik.enable=true
+      - 'traefik.http.routers.ws-canvas.rule=HostRegexp(`^.+[.]builder[.]mycrw[.]com`)'
+      - traefik.http.routers.ws-canvas.entrypoints=https
+      - traefik.http.routers.ws-canvas.tls=true
+      - traefik.http.routers.ws-canvas.tls.certresolver=cloudflare
+      - 'traefik.http.routers.ws-canvas.tls.domains[0].main=*.builder.mycrw.com'
+      - 'traefik.http.routers.ws-canvas.tls.domains[0].sans=builder.mycrw.com'
+      - traefik.http.routers.ws-canvas.service=ws-canvas-svc
+      - traefik.http.routers.ws-canvas.middlewares=gzip
+      - traefik.http.services.ws-canvas-svc.loadbalancer.server.port=3000
 
-  # ── Self-hosted publisher ────────────────────────────────────────────────────
   publisher:
-    image: ${PUBLISHER_IMAGE:-ghcr.io/webstudio-community/webstudio-publisher:latest}
+    image: '${PUBLISHER_IMAGE:-ghcr.io/webstudio-community/webstudio-publisher:latest}'
     restart: unless-stopped
     depends_on:
       app:
         condition: service_healthy
     environment:
-      - TRPC_SERVER_API_TOKEN=${SERVICE_BASE64_64_TRPC}
+      - 'TRPC_SERVER_API_TOKEN=${SERVICE_BASE64_64_TRPC}'
       - PUBLISHER_HOST=wstd.mycrw.com
-      - BUILDER_INTERNAL_URL=http://app:3000
+      - 'BUILDER_INTERNAL_URL=http://app:3000'
     volumes:
-      - published-sites:/var/publish
-      - publisher-work:/var/work
+      - 'published-sites:/var/publish'
+      - 'publisher-work:/var/work'
 
-  # ── Nginx para previews ─────────────────────────────────────────────────────
   nginx:
-    image: nginx:alpine
+    image: 'nginx:alpine'
     restart: unless-stopped
     expose:
-      - "80"
+      - '80'
     depends_on:
       app:
         condition: service_healthy
     volumes:
-      - published-sites:/var/publish:ro
+      - 'published-sites:/var/publish:ro'
     entrypoint:
       - /bin/sh
-      - -c
+      - '-c'
       - "echo 'IyMKIyMgV2Vic3R1ZGlvIHNlbGYtaG9zdGluZyBzdGF0aWMgZmlsZSBzZXJ2ZXIuCiMjCiMjIFNlcnZlcyBwdWJsaXNoZWQgV2Vic3R1ZGlvIHByb2plY3RzLgojIyBGaWxlcyBhcmUgd3JpdHRlbiB0byAvdmFyL3B1Ymxpc2gvPGRvbWFpbj4vIGJ5IHRoZSBwdWJsaXNoZXIgc2VydmljZS4KIyMKIyMgQWxsIHVucmVjb2duaXNlZCByZXF1ZXN0cyBmYWxsIHRocm91Z2ggdG8gdGhlIGJ1aWxkZXIgYXBwICh1cHN0cmVhbSAiYXBwOjMwMDAiKS4KIyMKCmV2ZW50cyB7CiAgd29ya2VyX2Nvbm5lY3Rpb25zIDEwMjQ7Cn0KCmh0dHAgewogIGluY2x1ZGUgICAgICAgL2V0Yy9uZ2lueC9taW1lLnR5cGVzOwogIGRlZmF1bHRfdHlwZSAgYXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtOwogIHNlbmRmaWxlICAgICAgb247CiAgZ3ppcCAgICAgICAgICBvbjsKICBnemlwX3R5cGVzICAgIHRleHQvcGxhaW4gdGV4dC9jc3MgYXBwbGljYXRpb24vanNvbiBhcHBsaWNhdGlvbi9qYXZhc2NyaXB0IHRleHQveG1sIGFwcGxpY2F0aW9uL3htbCBpbWFnZS9zdmcreG1sOwoKICB1cHN0cmVhbSBidWlsZGVyIHsKICAgIHNlcnZlciBhcHA6MzAwMDsKICB9CgogIHNlcnZlciB7CiAgICBsaXN0ZW4gODAgZGVmYXVsdF9zZXJ2ZXI7CiAgICBzZXJ2ZXJfbmFtZSBfOwoKICAgIHJvb3QgL3Zhci9wdWJsaXNoLyRob3N0OwogICAgaW5kZXggaW5kZXguaHRtbDsKCiAgICBsb2NhdGlvbiAvIHsKICAgICAgdHJ5X2ZpbGVzICR1cmkgJHVyaS8gJHVyaS5odG1sIC9pbmRleC5odG1sIEBidWlsZGVyOwogICAgfQoKICAgIGxvY2F0aW9uIEBidWlsZGVyIHsKICAgICAgcHJveHlfcGFzcyAgICAgICAgIGh0dHA6Ly9idWlsZGVyOwogICAgICBwcm94eV9zZXRfaGVhZGVyICAgSG9zdCAgICAgICAgICAgICAgJGhvc3Q7CiAgICAgIHByb3h5X3NldF9oZWFkZXIgICBYLVJlYWwtSVAgICAgICAgICAkcmVtb3RlX2FkZHI7CiAgICAgIHByb3h5X3NldF9oZWFkZXIgICBYLUZvcndhcmRlZC1Gb3IgICAkcHJveHlfYWRkX3hfZm9yd2FyZGVkX2ZvcjsKICAgICAgcHJveHlfc2V0X2hlYWRlciAgIFgtRm9yd2FyZGVkLVByb3RvICRzY2hlbWU7CiAgICAgIHByb3h5X3JlYWRfdGltZW91dCA2MHM7CiAgICB9CgogICAgbG9jYXRpb24gfiogXC4oanN8Y3NzfHBuZ3xqcGd8anBlZ3xnaWZ8aWNvfHN2Z3x3b2ZmfHdvZmYyfHR0Znxlb3QpJCB7CiAgICAgIHRyeV9maWxlcyAkdXJpIEBidWlsZGVyOwogICAgICBleHBpcmVzIDF5OwogICAgICBhZGRfaGVhZGVyIENhY2hlLUNvbnRyb2wgInB1YmxpYywgaW1tdXRhYmxlIjsKICAgIH0KICB9Cn0K' | base64 -d > /etc/nginx/nginx.conf && exec nginx -g 'daemon off;'"
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 80 || exit 1"]
@@ -117,19 +111,20 @@ services:
       timeout: 5s
       retries: 3
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ws-publisher.rule=HostRegexp(`^.+[.]wstd[.]mycrw[.]com`)"
-      - "traefik.http.routers.ws-publisher.entrypoints=https"
-      - "traefik.http.routers.ws-publisher.tls=true"
-      - "traefik.http.routers.ws-publisher.tls.certresolver=cloudflare"
-      - "traefik.http.routers.ws-publisher.tls.domains[0].main=*.wstd.mycrw.com"
-      - "traefik.http.routers.ws-publisher.tls.domains[0].sans=wstd.mycrw.com"
-      - "traefik.http.routers.ws-publisher.service=ws-publisher-svc"
-      - "traefik.http.routers.ws-publisher.middlewares=gzip"
-      - "traefik.http.services.ws-publisher-svc.loadbalancer.server.port=80"
+      - traefik.enable=true
+      - 'traefik.http.routers.ws-publisher.rule=HostRegexp(`^.+[.]wstd[.]mycrw[.]com`)'
+      - traefik.http.routers.ws-publisher.entrypoints=https
+      - traefik.http.routers.ws-publisher.tls=true
+      - traefik.http.routers.ws-publisher.tls.certresolver=cloudflare
+      - 'traefik.http.routers.ws-publisher.tls.domains[0].main=*.wstd.mycrw.com'
+      - 'traefik.http.routers.ws-publisher.tls.domains[0].sans=wstd.mycrw.com'
+      - traefik.http.routers.ws-publisher.service=ws-publisher-svc
+      - traefik.http.routers.ws-publisher.middlewares=gzip
+      - traefik.http.services.ws-publisher-svc.loadbalancer.server.port=80
 
 volumes:
   uploads:
   published-sites:
   publisher-work:
-#MyCRW / 2026
+
+  #MyCRW / V2
